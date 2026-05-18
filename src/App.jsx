@@ -455,7 +455,8 @@ function AdminPanel({ onZatvori, onNovaVijest }) {
 export default function App() {
   const [ekran, setEkran]   = useState("odabir");
   const [zup,   setZup]     = useState("");
-  const [admin, setAdmin]   = useState(false);
+  const [admin, setAdmin]     = useState(false);
+const [lozinkaOk, setLozinkaOk] = useState(false);
   const [vijesti, setVijesti] = useState(DEMO_VIJESTI);
 
   return (
@@ -467,7 +468,43 @@ export default function App() {
           <button className="fab" onClick={()=>setAdmin(true)} title="Admin panel">✎</button>
         </>
       )}
-      {admin && <AdminPanel onZatvori={()=>setAdmin(false)} onNovaVijest={v=>setVijesti(p=>[v,...p])} />}
+      {admin && lozinkaOk && <AdminPanel onZatvori={()=>{setAdmin(false);setLozinkaOk(false);}} onNovaVijest={v=>setVijesti(p=>[v,...p])} />}
+{admin && !lozinkaOk && (
+  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:800,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+    <div style={{background:"#fff",padding:"36px 32px",maxWidth:360,width:"100%",boxShadow:"0 24px 80px rgba(0,0,0,.35)"}}>
+      <div style={{fontFamily:"'Lora',serif",fontSize:20,fontWeight:600,color:"#0f0f0f",marginBottom:6}}>Admin pristup</div>
+      <div style={{fontFamily:"'Source Sans 3',sans-serif",fontSize:13,color:"#888",marginBottom:24,fontWeight:300}}>Unesite lozinku za objavu vijesti</div>
+      <input
+        type="password"
+        placeholder="Lozinka"
+        id="lozinka-input"
+        style={{width:"100%",padding:"11px 14px",border:"1px solid #d8d3cc",fontSize:14,fontFamily:"sans-serif",outline:"none",marginBottom:12,boxSizing:"border-box"}}
+        onKeyDown={e=>{
+          if(e.key==="Enter"){
+            if(e.target.value==="Demo1910."){setLozinkaOk(true);}
+            else{alert("Pogrešna lozinka");}
+          }
+        }}
+      />
+      <div style={{display:"flex",gap:10}}>
+        <button
+          style={{flex:1,padding:"11px",background:"#0f0f0f",color:"#fff",border:"none",cursor:"pointer",fontFamily:"sans-serif",fontWeight:700,fontSize:14}}
+          onClick={()=>{
+            const val=document.getElementById("lozinka-input").value;
+            if(val==="Demo1910."){setLozinkaOk(true);}
+            else{alert("Pogrešna lozinka");}
+          }}>
+          Prijava
+        </button>
+        <button
+          style={{padding:"11px 20px",background:"#fff",border:"1px solid #d8d3cc",cursor:"pointer",fontFamily:"sans-serif",fontSize:14,color:"#555"}}
+          onClick={()=>setAdmin(false)}>
+          Odustani
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
         }
