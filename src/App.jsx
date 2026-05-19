@@ -1,3 +1,42 @@
+import { useEffect } from "react";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+async function dohvatiVijesti() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/vijesti?order=vrijeme.desc`, {
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`
+    }
+  });
+  const data = await res.json();
+  return data.map(v => ({
+    ...v,
+    vrijeme: new Date(v.vrijeme).toLocaleString("hr-HR", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"2-digit" })
+  }));
+}
+
+async function spremiVijest(vijest) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/vijesti`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify({
+      zupanija: vijest.zupanija,
+      rubrika: vijest.rubrika,
+      naslov: vijest.naslov,
+      kratki_tekst: vijest.kratki_tekst,
+      vazna: vijest.vazna
+    })
+  });
+  const data = await res.json();
+  return data[0];
+}
 import { useState, useCallback } from "react";
 
 /* ─── PODACI ─────────────────────────────────────────────────────────────── */
@@ -452,9 +491,17 @@ function AdminPanel({ onZatvori, onNovaVijest }) {
 export default function App() {
   const [ekran, setEkran]   = useState("odabir");
   const [zup,   setZup]     = useState("");
-  const [admin, setAdmin]     = useState(false);
+  const [admin, setAdmin]         = useState(false);
 const [lozinkaOk, setLozinkaOk] = useState(false);
-  const [vijesti, setVijesti] = useState(DEMO_VIJESTI);
+const [vijesti, setVijesti]     = useState([]);
+const [ucitavanje, setUcitavanje] = useState(true);
+
+useEffect(() => {
+  dohvatiVijesti().then(data => {
+    setVijesti(data);
+    setUcitavanje(false);
+  });
+}, []);
 
   return (
     <>
@@ -465,7 +512,10 @@ const [lozinkaOk, setLozinkaOk] = useState(false);
           <button className="fab" onClick={()=>setAdmin(true)} title="Admin panel">✎</button>
         </>
       )}
-      {admin && lozinkaOk && <AdminPanel onZatvori={()=>{setAdmin(false);setLozinkaOk(false);}} onNovaVijest={v=>setVijesti(p=>[v,...p])} />}
+      {admin && lozinkaOk && <AdminPanel onZatvori={()=>{setAdmin(false);setLozinkaOk(false);}} onNovaVijest={async v=>{
+  const spremljena = await spremiVijest(v);
+  if(spremljena) setVijesti(p=>[spremljena, ...p]);
+}} />
 {admin && !lozinkaOk && (
   <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:800,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
     <div style={{background:"#fff",padding:"36px 32px",maxWidth:360,width:"100%",boxShadow:"0 24px 80px rgba(0,0,0,.35)"}}>
