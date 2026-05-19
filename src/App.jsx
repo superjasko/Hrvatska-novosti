@@ -1,5 +1,24 @@
-import { useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 
+const ZUPANIJE = [
+  "Zagrebačka","Krapinsko-zagorska","Sisačko-moslavačka","Karlovačka",
+  "Varaždinska","Koprivničko-križevačka","Bjelovarsko-bilogorska",
+  "Primorsko-goranska","Ličko-senjska","Virovitičko-podravska",
+  "Požeško-slavonska","Brodsko-posavska","Zadarska","Osječko-baranjska",
+  "Šibensko-kninska","Vukovarsko-srijemska","Splitsko-dalmatinska",
+  "Istarska","Dubrovačko-neretvanska","Međimurska","Grad Zagreb"
+];
+
+const RUBRIKE = [
+  { id:"komunalne", label:"Komunalne usluge" },
+  { id:"promet",    label:"Promet" },
+  { id:"sigurnost", label:"Sigurnost i civilna zaštita" },
+  { id:"zupanija",  label:"Županija, grad ili općina" },
+  { id:"dogadanja", label:"Događanja" },
+  { id:"ostalo",    label:"Ostalo" },
+];
+
+const ADMIN_LOZINKA = "Demo1910.";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -13,7 +32,9 @@ async function dohvatiVijesti() {
   const data = await res.json();
   return data.map(v => ({
     ...v,
-    vrijeme: new Date(v.vrijeme).toLocaleString("hr-HR", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"2-digit" })
+    vrijeme: new Date(v.vrijeme).toLocaleString("hr-HR", {
+      hour:"2-digit", minute:"2-digit", day:"2-digit", month:"2-digit"
+    })
   }));
 }
 
@@ -37,36 +58,7 @@ async function spremiVijest(vijest) {
   const data = await res.json();
   return data[0];
 }
-import { useState, useCallback } from "react";
 
-/* ─── PODACI ─────────────────────────────────────────────────────────────── */
-const ZUPANIJE = [
-  "Zagrebačka","Krapinsko-zagorska","Sisačko-moslavačka","Karlovačka",
-  "Varaždinska","Koprivničko-križevačka","Bjelovarsko-bilogorska",
-  "Primorsko-goranska","Ličko-senjska","Virovitičko-podravska",
-  "Požeško-slavonska","Brodsko-posavska","Zadarska","Osječko-baranjska",
-  "Šibensko-kninska","Vukovarsko-srijemska","Splitsko-dalmatinska",
-  "Istarska","Dubrovačko-neretvanska","Međimurska","Grad Zagreb"
-];
-
-const RUBRIKE = [
-  { id:"komunalne", label:"Komunalne usluge" },
-  { id:"promet",    label:"Promet" },
-  { id:"sigurnost", label:"Sigurnost i civilna zaštita" },
-  { id:"zupanija",  label:"Županija, grad ili općina" },
-  { id:"dogadanja", label:"Događanja" },
-  { id:"ostalo",    label:"Ostalo" },
-];
-
-const DEMO_VIJESTI = [
-  { id:1, zupanija:"Grad Zagreb",          rubrika:"komunalne", naslov:"Planirana obnova vodovodne mreže na Trešnjevci",        kratki_tekst:"Zagreb Waters najavio je opsežne radove na obnovi vodovodnih cijevi u dijelu Trešnjevke. Radovi počinju idući tjedan i trajat će oko 14 dana.", vrijeme:"prije 2 sata", vazna:true },
-  { id:2, zupanija:"Grad Zagreb",          rubrika:"promet",    naslov:"Zatvorena Ilica zbog radova — obilazak na snazi",        kratki_tekst:"Zbog zamjene tramvajskih tračnica, Ilica je zatvorena za promet između Britanskog trga i Frankopanske. Obilazak je organiziran putem Mesničke.", vrijeme:"prije 4 sata", vazna:true },
-  { id:3, zupanija:"Splitsko-dalmatinska", rubrika:"sigurnost", naslov:"Upozorenje na jake udare bure duž obale",                kratki_tekst:"DHMZ je izdao upozorenje na jake udare bure od 80–100 km/h za splitsko područje. Preporuča se oprez pri vožnji na otvorenim cestama.", vrijeme:"prije 1 sat", vazna:true },
-  { id:4, zupanija:"Istarska",             rubrika:"dogadanja", naslov:"Filmski festival u Puli otvoren uz rekordnu publiku",     kratki_tekst:"Ovogodišnje otvorenje Pulskog filmskog festivala privuklo je više od 5.000 posjetitelja. Program traje do kraja tjedna.", vrijeme:"prije 6 sati", vazna:false },
-  { id:5, zupanija:"Primorsko-goranska",   rubrika:"zupanija",  naslov:"Županijska skupština usvojila proračun za 2026.",         kratki_tekst:"Primorsko-goranska županija usvojila je proračun od 180 milijuna eura s naglaskom na ulaganja u obrazovanje i infrastrukturu.", vrijeme:"prije 3 sata", vazna:false },
-];
-
-/* ─── AI HELPER ──────────────────────────────────────────────────────────── */
 async function generirajVijestAI(natuknica, zupanija, rubrika) {
   const prompt = `Ti si novinar lokalnih vijesti za Hrvatsku. Na temelju sljedeće natuknice, napiši kratku vijest za web portal.
 
@@ -82,9 +74,7 @@ Napiši vijest u JSON formatu, bez ikakvih markdown oznaka, samo čisti JSON:
 
   const res = await fetch("/.netlify/functions/claude", {
     method:"POST",
-    headers:{ 
-      "Content-Type":"application/json"
-    },
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({
       model:"claude-sonnet-4-5",
       max_tokens:1000,
@@ -97,7 +87,6 @@ Napiši vijest u JSON formatu, bez ikakvih markdown oznaka, samo čisti JSON:
   catch { return { naslov:"Nova vijest", tekst:text }; }
 }
 
-/* ─── CSS ────────────────────────────────────────────────────────────────── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -108,25 +97,21 @@ const CSS = `
   --sans:'Source Sans 3',sans-serif; --serif:'Lora',Georgia,serif;
 }
 body{background:var(--paper);}
-
-/* ── odabir županije ── */
-.oz{min-height:100vh;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;font-family:var(--sans);}
+.oz{min-height:100vh;background:#c8b89a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;font-family:var(--sans);}
 .oz-inner{max-width:560px;width:100%;}
 .oz-logo{text-align:center;margin-bottom:48px;}
-.oz-logoflag{display:inline-flex;align-items:center;gap:14px;border-bottom:1px solid #2a2a2a;padding-bottom:18px;margin-bottom:18px;}
+.oz-logoflag{display:inline-flex;align-items:center;gap:14px;border-bottom:1px solid #b0a088;padding-bottom:18px;margin-bottom:18px;}
 .oz-bar{width:3px;height:34px;background:var(--accent);}
-.oz-name{font-family:var(--serif);font-size:20px;font-weight:700;color:#fff;text-align:left;}
-.oz-sub{font-size:9px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#555;margin-top:4px;}
-.oz-h1{font-family:var(--serif);font-size:26px;font-weight:400;color:#fff;margin-bottom:6px;}
-.oz-desc{font-size:14px;color:#666;font-weight:300;}
-.oz-input{width:100%;padding:12px 16px;margin-bottom:10px;background:#181818;border:1px solid #2a2a2a;color:#fff;font-size:14px;font-family:var(--sans);outline:none;transition:border-color .2s;}
-.oz-input::placeholder{color:#444;}
-.oz-input:focus{border-color:#444;}
+.oz-name{font-family:var(--serif);font-size:20px;font-weight:700;color:#2c1f0f;text-align:left;}
+.oz-sub{font-size:9px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#7a6a55;margin-top:4px;}
+.oz-h1{font-family:var(--serif);font-size:26px;font-weight:400;color:#2c1f0f;margin-bottom:6px;}
+.oz-desc{font-size:14px;color:#6a5a45;font-weight:300;}
+.oz-input{width:100%;padding:12px 16px;margin-bottom:10px;background:#d8c8b0;border:1px solid #b0a088;color:#2c1f0f;font-size:14px;font-family:var(--sans);outline:none;transition:border-color .2s;}
+.oz-input::placeholder{color:#9a8a75;}
+.oz-input:focus{border-color:#8a7a65;}
 .oz-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
-.oz-btn{padding:11px 14px;background:transparent;border:1px solid #222;color:#888;font-size:13px;font-family:var(--sans);text-align:left;cursor:pointer;transition:all .15s;}
-.oz-btn:hover{border-color:var(--accent);color:#fff;background:#181818;}
-
-/* ── header ── */
+.oz-btn{padding:11px 14px;background:#d8c8b0;border:1px solid #b0a088;color:#4a3a28;font-size:13px;font-family:var(--sans);text-align:left;cursor:pointer;transition:all .15s;}
+.oz-btn:hover{border-color:var(--accent);color:var(--accent);background:#e0d0b8;}
 .hdr{background:var(--white);border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:200;}
 .hdr-top{max-width:960px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;}
 .logo{display:flex;align-items:center;gap:12px;}
@@ -140,18 +125,12 @@ body{background:var(--paper);}
 .hdr-zup{display:flex;align-items:center;gap:7px;background:none;border:none;cursor:pointer;font-size:12px;font-family:var(--sans);font-weight:600;color:var(--ink3);transition:color .15s;}
 .hdr-zup:hover{color:var(--ink);}
 .hdr-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
-
-/* ── nav ── */
 .nav{border-bottom:1px solid var(--rule);background:var(--white);}
 .nav-inner{max-width:960px;margin:0 auto;padding:0 24px;display:flex;overflow-x:auto;}
 .nav-btn{padding:13px 18px;font-size:13px;font-family:var(--sans);font-weight:500;white-space:nowrap;cursor:pointer;background:none;border:none;color:var(--ink3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;letter-spacing:.2px;}
 .nav-btn:hover{color:var(--ink);}
 .nav-btn.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
-
-/* ── main ── */
 .main{max-width:960px;margin:0 auto;padding:32px 24px;}
-
-/* ── breaking ── */
 .breaking{border:1px solid var(--rule);background:var(--white);margin-bottom:28px;}
 .breaking-lbl{display:inline-block;padding:8px 16px;background:var(--accent);font-size:10px;font-family:var(--sans);font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#fff;}
 .breaking-row{display:flex;align-items:baseline;gap:16px;padding:10px 16px;border-bottom:1px solid var(--paper);cursor:pointer;transition:background .1s;}
@@ -159,11 +138,7 @@ body{background:var(--paper);}
 .breaking-row:hover{background:var(--paper);}
 .breaking-title{font-family:var(--serif);font-size:15px;font-weight:600;color:var(--ink);flex:1;}
 .breaking-time{font-size:11px;color:var(--ink4);font-family:var(--sans);white-space:nowrap;}
-
-/* ── oglas ── */
 .ad{border:1px dashed var(--rule);background:var(--paper2);padding:18px 24px;margin-bottom:28px;display:flex;align-items:center;justify-content:center;color:var(--ink4);font-size:12px;font-family:var(--sans);letter-spacing:.5px;text-transform:uppercase;}
-
-/* ── kartice ── */
 .card{background:var(--white);border:1px solid var(--rule);padding:22px 24px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
 .card:hover{border-color:#aaa;}
 .card-meta{font-size:11px;font-family:var(--sans);font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;}
@@ -171,13 +146,9 @@ body{background:var(--paper);}
 .card-title{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--ink);line-height:1.35;margin-bottom:10px;}
 .card-text{font-family:var(--sans);font-size:14px;color:var(--ink3);line-height:1.65;font-weight:300;}
 .card-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--paper2);font-size:11px;color:var(--ink4);font-family:var(--sans);}
-
-/* ── prazan state ── */
 .empty{text-align:center;padding:72px 24px;}
 .empty-title{font-family:var(--serif);font-size:20px;color:var(--ink3);margin-bottom:8px;}
 .empty-sub{font-size:14px;color:var(--ink4);font-family:var(--sans);}
-
-/* ── overlay / modal ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:800;display:flex;align-items:center;justify-content:center;padding:24px;}
 .modal{background:var(--white);max-width:580px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.35);}
 .modal-head{padding:28px 32px 20px;border-bottom:1px solid var(--rule);margin-bottom:0;}
@@ -189,16 +160,10 @@ body{background:var(--paper);}
 .modal-time{font-size:12px;color:var(--ink4);font-family:var(--sans);}
 .btn-close{padding:9px 24px;background:var(--ink);color:#fff;border:none;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.3px;transition:background .15s;}
 .btn-close:hover{background:var(--accent);}
-
-/* ── toast ── */
 .toast{position:fixed;top:20px;right:20px;z-index:1000;background:var(--ink);color:#fff;padding:13px 20px;font-family:var(--sans);font-size:13px;max-width:320px;border-left:3px solid var(--accent);box-shadow:0 8px 32px rgba(0,0,0,.3);animation:tin .25s ease;}
 @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-
-/* ── FAB ── */
 .fab{position:fixed;bottom:28px;right:28px;z-index:700;width:46px;height:46px;background:var(--ink);border:none;cursor:pointer;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.35);transition:background .15s;line-height:1;}
 .fab:hover{background:var(--accent);}
-
-/* ── admin modal ── */
 .adm{background:var(--white);max-width:580px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.35);}
 .adm-head{padding:28px 32px 24px;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:flex-start;}
 .adm-title{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);}
@@ -206,16 +171,12 @@ body{background:var(--paper);}
 .btn-x{background:none;border:none;cursor:pointer;font-size:20px;color:var(--ink4);line-height:1;padding:2px;}
 .btn-x:hover{color:var(--ink);}
 .adm-body{padding:28px 32px;}
-
-/* steps */
 .steps{display:flex;gap:6px;margin-bottom:32px;}
 .step{flex:1;}
 .sbar{height:3px;background:var(--rule);margin-bottom:6px;transition:background .3s;}
 .sbar.done{background:var(--accent);}
 .slbl{font-size:10px;font-family:var(--sans);font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);}
 .slbl.done{color:var(--accent);}
-
-/* form */
 .flbl{display:block;font-size:11px;font-family:var(--sans);font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;}
 .finput,.ftarea,.fsel{width:100%;padding:11px 14px;border:1px solid var(--rule);font-size:14px;font-family:var(--sans);color:var(--ink);background:var(--white);outline:none;transition:border-color .2s;margin-bottom:20px;}
 .finput:focus,.ftarea:focus,.fsel:focus{border-color:var(--ink3);}
@@ -243,9 +204,8 @@ body{background:var(--paper);}
 .ok-sub{font-size:14px;color:var(--ink3);font-family:var(--sans);margin-bottom:24px;}
 .ok-row{display:flex;gap:10px;justify-content:center;}
 .btn-sec{padding:10px 24px;border:1px solid var(--rule);background:var(--white);color:var(--ink3);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;}
+.ucitavanje{text-align:center;padding:72px 24px;font-family:var(--sans);color:var(--ink4);font-size:14px;}
 `;
-
-/* ─── KOMPONENTE ─────────────────────────────────────────────────────────── */
 
 function OdabirZupanije({ onOdabir }) {
   const [q, setQ] = useState("");
@@ -274,7 +234,7 @@ function OdabirZupanije({ onOdabir }) {
   );
 }
 
-function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti }) {
+function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti, ucitavanje }) {
   const [rubrika,        setRubrika]        = useState("komunalne");
   const [obavijesti,     setObavijesti]     = useState(false);
   const [odabranaVijest, setOdabranaVijest] = useState(null);
@@ -288,9 +248,7 @@ function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti }) {
   return (
     <div style={{ minHeight:"100vh", background:"var(--paper)" }}>
       <style>{CSS}</style>
-
       {toast && <div className="toast">{toast}</div>}
-
       {odabranaVijest && (
         <div className="overlay" onClick={() => setOdabranaVijest(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -308,7 +266,6 @@ function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti }) {
           </div>
         </div>
       )}
-
       <header className="hdr">
         <div className="hdr-top">
           <div className="logo">
@@ -340,7 +297,6 @@ function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti }) {
           </div>
         </nav>
       </header>
-
       <main className="main">
         {vazne.length > 0 && (
           <div className="breaking">
@@ -353,10 +309,10 @@ function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti }) {
             ))}
           </div>
         )}
-
         <div className="ad">Reklamni prostor — kontaktirajte nas za oglašavanje</div>
-
-        {filtrirane.length === 0 ? (
+        {ucitavanje ? (
+          <div className="ucitavanje">Učitavanje vijesti...</div>
+        ) : filtrirane.length === 0 ? (
           <div className="empty">
             <p className="empty-title">Još nema objava</p>
             <p className="empty-sub">Koristite admin panel za dodavanje vijesti.</p>
@@ -378,15 +334,15 @@ function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti }) {
 }
 
 function AdminPanel({ onZatvori, onNovaVijest }) {
-  const [korak,    setKorak]    = useState(1);
-  const [natuk,    setNatuk]    = useState("");
-  const [zup,      setZup]      = useState("");
-  const [rub,      setRub]      = useState("komunalne");
-  const [vazna,    setVazna]    = useState(false);
-  const [gen,      setGen]      = useState(false);
-  const [vijest,   setVijest]   = useState(null);
-  const [ok,       setOk]       = useState(false);
-  const [err,      setErr]      = useState("");
+  const [korak,  setKorak]  = useState(1);
+  const [natuk,  setNatuk]  = useState("");
+  const [zup,    setZup]    = useState("");
+  const [rub,    setRub]    = useState("komunalne");
+  const [vazna,  setVazna]  = useState(false);
+  const [gen,    setGen]    = useState(false);
+  const [vijest, setVijest] = useState(null);
+  const [ok,     setOk]     = useState(false);
+  const [err,    setErr]    = useState("");
 
   const generiraj = async () => {
     if (!natuk.trim() || !zup) return;
@@ -394,21 +350,30 @@ function AdminPanel({ onZatvori, onNovaVijest }) {
     try {
       const v = await generirajVijestAI(natuk, zup, RUBRIKE.find(r=>r.id===rub)?.label);
       setVijest(v); setKorak(3);
-    } catch { setErr("Greška pri generiranju. Provjerite vezu."); }
+    } catch {
+      setErr("Greška pri generiranju. Provjerite vezu.");
+    }
     setGen(false);
   };
 
-  const objavi = () => {
+  const objavi = async () => {
     if (!vijest) return;
-    onNovaVijest({ id:Date.now(), zupanija:zup, rubrika:rub, naslov:vijest.naslov, kratki_tekst:vijest.tekst, vrijeme:"upravo", vazna });
-    setOk(true);
+    const rezultat = await onNovaVijest({
+      zupanija: zup, rubrika: rub,
+      naslov: vijest.naslov, kratki_tekst: vijest.tekst, vazna
+    });
+    if (rezultat) setOk(true);
+    else setErr("Greška pri objavi. Pokušajte ponovo.");
   };
 
-  const reset = () => { setKorak(1);setNatuk("");setZup("");setRub("komunalne");setVazna(false);setVijest(null);setOk(false);setErr(""); };
+  const reset = () => {
+    setKorak(1); setNatuk(""); setZup(""); setRub("komunalne");
+    setVazna(false); setVijest(null); setOk(false); setErr("");
+  };
 
   return (
     <div className="overlay">
-      <div className="adm" onClick={e=>e.stopPropagation()}>
+      <div className="adm" onClick={e => e.stopPropagation()}>
         <div className="adm-head">
           <div>
             <div className="adm-title">Admin panel</div>
@@ -418,14 +383,13 @@ function AdminPanel({ onZatvori, onNovaVijest }) {
         </div>
         <div className="adm-body">
           <div className="steps">
-            {["Natuknica","Lokacija","Pregled"].map((l,i)=>(
+            {["Natuknica","Lokacija","Pregled"].map((l,i) => (
               <div key={i} className="step">
                 <div className={`sbar${korak>i?" done":""}`}/>
                 <div className={`slbl${korak>i?" done":""}`}>{l}</div>
               </div>
             ))}
           </div>
-
           {ok ? (
             <div className="ok">
               <div className="ok-icon">✓</div>
@@ -440,27 +404,22 @@ function AdminPanel({ onZatvori, onNovaVijest }) {
             <>
               <label className="flbl">1. Natuknica</label>
               <textarea className="ftarea" value={natuk} onChange={e=>setNatuk(e.target.value)} placeholder="Npr: Otvoren novi most u centru grada, promet preusmjeren" />
-
               <label className="flbl">2. Županija</label>
               <select className="fsel" value={zup} onChange={e=>{setZup(e.target.value);if(e.target.value)setKorak(2);}}>
                 <option value="">— Odaberite —</option>
                 {ZUPANIJE.map(z=><option key={z} value={z}>{z}</option>)}
               </select>
-
               <label className="flbl">Rubrika</label>
               <div className="chips">
                 {RUBRIKE.map(r=>(
                   <button key={r.id} className={`chip${rub===r.id?" on":""}`} onClick={()=>setRub(r.id)}>{r.label}</button>
                 ))}
               </div>
-
               <label className="chkrow">
                 <input type="checkbox" checked={vazna} onChange={e=>setVazna(e.target.checked)} />
                 Označi kao važnu vijest
               </label>
-
               {err && <div className="err">{err}</div>}
-
               {vijest && korak===3 && (
                 <div className="preview">
                   <div className="preview-lbl">AI generirani sadržaj</div>
@@ -469,7 +428,6 @@ function AdminPanel({ onZatvori, onNovaVijest }) {
                   <button className="btn-regen" onClick={()=>{setVijest(null);setKorak(2);}}>Generiraj ponovo</button>
                 </div>
               )}
-
               <div className="btn-row">
                 {!vijest ? (
                   <button className="btn-p" onClick={generiraj} disabled={!natuk.trim()||!zup||gen}>
@@ -487,71 +445,94 @@ function AdminPanel({ onZatvori, onNovaVijest }) {
   );
 }
 
-/* ─── APP ────────────────────────────────────────────────────────────────── */
-export default function App() {
-  const [ekran, setEkran]   = useState("odabir");
-  const [zup,   setZup]     = useState("");
-  const [admin, setAdmin]         = useState(false);
-const [lozinkaOk, setLozinkaOk] = useState(false);
-const [vijesti, setVijesti]     = useState([]);
-const [ucitavanje, setUcitavanje] = useState(true);
+function LozinkaModal({ onUspjeh, onOdustani }) {
+  const [unos, setUnos] = useState("");
+  const [err,  setErr]  = useState(false);
 
-useEffect(() => {
-  dohvatiVijesti().then(data => {
-    setVijesti(data);
-    setUcitavanje(false);
-  });
-}, []);
+  const provjeri = () => {
+    if (unos === ADMIN_LOZINKA) { onUspjeh(); }
+    else { setErr(true); setUnos(""); }
+  };
+
+  return (
+    <div className="overlay">
+      <div style={{background:"#fff",padding:"36px 32px",maxWidth:360,width:"100%",boxShadow:"0 24px 80px rgba(0,0,0,.35)"}}>
+        <div style={{fontFamily:"'Lora',serif",fontSize:20,fontWeight:600,color:"#0f0f0f",marginBottom:6}}>Admin pristup</div>
+        <div style={{fontFamily:"'Source Sans 3',sans-serif",fontSize:13,color:"#888",marginBottom:24,fontWeight:300}}>Unesite lozinku za objavu vijesti</div>
+        {err && <div className="err">Pogrešna lozinka. Pokušajte ponovo.</div>}
+        <input
+          type="password"
+          placeholder="Lozinka"
+          value={unos}
+          onChange={e=>{setUnos(e.target.value);setErr(false);}}
+          onKeyDown={e=>e.key==="Enter" && provjeri()}
+          style={{width:"100%",padding:"11px 14px",border:"1px solid #d8d3cc",fontSize:14,fontFamily:"sans-serif",outline:"none",marginBottom:16,boxSizing:"border-box"}}
+        />
+        <div style={{display:"flex",gap:10}}>
+          <button className="btn-p" onClick={provjeri}>Prijava</button>
+          <button className="btn-sec" onClick={onOdustani}>Odustani</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [ekran,      setEkran]      = useState("odabir");
+  const [zup,        setZup]        = useState("");
+  const [admin,      setAdmin]      = useState(false);
+  const [lozinkaOk,  setLozinkaOk]  = useState(false);
+  const [vijesti,    setVijesti]    = useState([]);
+  const [ucitavanje, setUcitavanje] = useState(true);
+
+  useEffect(() => {
+    dohvatiVijesti()
+      .then(data => { setVijesti(data); setUcitavanje(false); })
+      .catch(() => setUcitavanje(false));
+  }, []);
+
+  const handleNovaVijest = async (v) => {
+    const spremljena = await spremiVijest(v);
+    if (spremljena) {
+      const formatirana = {
+        ...spremljena,
+        vrijeme: new Date(spremljena.vrijeme).toLocaleString("hr-HR", {
+          hour:"2-digit", minute:"2-digit", day:"2-digit", month:"2-digit"
+        })
+      };
+      setVijesti(p => [formatirana, ...p]);
+      return formatirana;
+    }
+    return null;
+  };
 
   return (
     <>
+      <style>{CSS}</style>
       {ekran==="odabir" && <OdabirZupanije onOdabir={z=>{setZup(z);setEkran("portal");}} />}
       {ekran==="portal" && (
         <>
-          <VijestiPortal zupanija={zup} onPromijeniZupaniju={()=>setEkran("odabir")} vijesti={vijesti} />
+          <VijestiPortal
+            zupanija={zup}
+            onPromijeniZupaniju={()=>setEkran("odabir")}
+            vijesti={vijesti}
+            ucitavanje={ucitavanje}
+          />
           <button className="fab" onClick={()=>setAdmin(true)} title="Admin panel">✎</button>
         </>
       )}
-      {admin && lozinkaOk && <AdminPanel onZatvori={()=>{setAdmin(false);setLozinkaOk(false);}} onNovaVijest={async v=>{
-  const spremljena = await spremiVijest(v);
-  if(spremljena) setVijesti(p=>[spremljena, ...p]);
-}} />
-{admin && !lozinkaOk && (
-  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:800,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-    <div style={{background:"#fff",padding:"36px 32px",maxWidth:360,width:"100%",boxShadow:"0 24px 80px rgba(0,0,0,.35)"}}>
-      <div style={{fontFamily:"'Lora',serif",fontSize:20,fontWeight:600,color:"#0f0f0f",marginBottom:6}}>Admin pristup</div>
-      <div style={{fontFamily:"'Source Sans 3',sans-serif",fontSize:13,color:"#888",marginBottom:24,fontWeight:300}}>Unesite lozinku za objavu vijesti</div>
-      <input
-        type="password"
-        placeholder="Lozinka"
-        id="lozinka-input"
-        style={{width:"100%",padding:"11px 14px",border:"1px solid #d8d3cc",fontSize:14,fontFamily:"sans-serif",outline:"none",marginBottom:12,boxSizing:"border-box"}}
-        onKeyDown={e=>{
-          if(e.key==="Enter"){
-            if(e.target.value==="Demo1910."){setLozinkaOk(true);}
-            else{alert("Pogrešna lozinka");}
-          }
-        }}
-      />
-      <div style={{display:"flex",gap:10}}>
-        <button
-          style={{flex:1,padding:"11px",background:"#0f0f0f",color:"#fff",border:"none",cursor:"pointer",fontFamily:"sans-serif",fontWeight:700,fontSize:14}}
-          onClick={()=>{
-            const val=document.getElementById("lozinka-input").value;
-            if(val==="Demo1910."){setLozinkaOk(true);}
-            else{alert("Pogrešna lozinka");}
-          }}>
-          Prijava
-        </button>
-        <button
-          style={{padding:"11px 20px",background:"#fff",border:"1px solid #d8d3cc",cursor:"pointer",fontFamily:"sans-serif",fontSize:14,color:"#555"}}
-          onClick={()=>setAdmin(false)}>
-          Odustani
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      {admin && !lozinkaOk && (
+        <LozinkaModal
+          onUspjeh={()=>setLozinkaOk(true)}
+          onOdustani={()=>setAdmin(false)}
+        />
+      )}
+      {admin && lozinkaOk && (
+        <AdminPanel
+          onZatvori={()=>{ setAdmin(false); setLozinkaOk(false); }}
+          onNovaVijest={handleNovaVijest}
+        />
+      )}
     </>
   );
-        }
+}
