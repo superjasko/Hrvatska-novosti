@@ -223,7 +223,9 @@ function OdabirZupanije({ onOdabir }) {
 
 function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti, ucitavanje }) {
   const [rubrika,        setRubrika]        = useState("komunalne");
-  const [obavijesti,     setObavijesti]     = useState(false);
+  const [obavijesti, setObavijesti] = useState(() => {
+  return localStorage.getItem(`obavijesti_${zupanija}`) === "true";
+});
   const [odabranaVijest, setOdabranaVijest] = useState(null);
   const [toast,          setToast]          = useState(null);
 
@@ -264,7 +266,10 @@ function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti, ucitavanje }) {
           </div>
           <div className="hdr-right">
             <button className={`hdr-btn${obavijesti?" on":""}`} onClick={() => {
-              setObavijesti(p => !p);
+              setObavijesti(p => {
+  localStorage.setItem(`obavijesti_${zupanija}`, !p);
+  return !p;
+});
               showToast(obavijesti ? `Obavijesti za ${zupanija} isključene.` : `Obavijesti za ${zupanija} uključene.`);
             }}>
               {obavijesti ? "Obavijesti: uklj." : "Uključi obavijesti"}
