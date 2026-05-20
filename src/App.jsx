@@ -19,15 +19,13 @@ const RUBRIKE = [
 ];
 
 const ADMIN_LOZINKA = "Demo1910.";
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Supabase se poziva kroz backend funkciju
 
 async function dohvatiVijesti() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/vijesti?order=vrijeme.desc`, {
-    headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`
-    }
+  const res = await fetch("/.netlify/functions/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "get_vijesti" })
   });
   const data = await res.json();
   return data.map(v => ({
@@ -39,21 +37,10 @@ async function dohvatiVijesti() {
 }
 
 async function spremiVijest(vijest) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/vijesti`, {
+  const res = await fetch("/.netlify/functions/claude", {
     method: "POST",
-    headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation"
-    },
-    body: JSON.stringify({
-      zupanija: vijest.zupanija,
-      rubrika: vijest.rubrika,
-      naslov: vijest.naslov,
-      kratki_tekst: vijest.kratki_tekst,
-      vazna: vijest.vazna
-    })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "post_vijest", vijest })
   });
   const data = await res.json();
   return data[0];
