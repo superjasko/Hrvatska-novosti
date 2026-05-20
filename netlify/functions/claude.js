@@ -19,7 +19,7 @@ export async function handler(event) {
 
   // Supabase — spremi vijest
   if (type === "post_vijest") {
-    const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/vijesti`, {
+    const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/vijesti?columns=zupanija,rubrika,naslov,kratki_tekst,vazna`, {
       method: "POST",
       headers: {
         "apikey": process.env.SUPABASE_KEY,
