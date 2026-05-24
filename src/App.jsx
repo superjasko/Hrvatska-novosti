@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+const ONESIGNAL_APP_ID = "48669045-803a-4541-b9b8-4fe516169dab";
 
 const ZUPANIJE = [
   "Zagrebačka","Krapinsko-zagorska","Sisačko-moslavačka","Karlovačka",
@@ -477,6 +478,16 @@ export default function App() {
   const [vijesti,    setVijesti]    = useState([]);
   const [ucitavanje, setUcitavanje] = useState(true);
 
+  useEffect(() => {
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: ONESIGNAL_APP_ID,
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true,
+    });
+  });
+}, []);
   useEffect(() => {
     dohvatiVijesti()
       .then(data => { setVijesti(data); setUcitavanje(false); })
