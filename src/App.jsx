@@ -486,6 +486,7 @@ export default function App() {
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true,
     });
+    await OneSignal.Notifications.requestPermission();
   });
 }, []);
   useEffect(() => {
