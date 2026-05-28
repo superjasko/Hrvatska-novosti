@@ -17,7 +17,7 @@ export async function handler(event) {
     return { statusCode: 200, body: JSON.stringify(data) };
   }
 
-  // Supabase — spremi vijest
+  // Supabase — spremi vijest i pošalji obavijest
   if (type === "post_vijest") {
     const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/vijesti?columns=zupanija,rubrika,naslov,kratki_tekst,vazna`, {
       method: "POST",
@@ -30,6 +30,26 @@ export async function handler(event) {
       body: JSON.stringify(body.vijest)
     });
     const data = await res.json();
+    const spremljena = data[0];
+
+    // Pošalji push obavijest ako je vijest važna
+    if (spremljena && body.vijest.vazna) {
+      await fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Basic ${process.env.ONESIGNAL_API_KEY}`
+        },
+        body: JSON.stringify({
+          app_id: "48669045-803a-4541-b9b8-4fe516169dab",
+          included_segments: ["All"],
+          headings: { en: spremljena.zupanija },
+          contents: { en: spremljena.naslov },
+          url: "https://demoaplikacijanovosti.netlify.app"
+        })
+      });
+    }
+
     return { statusCode: 200, body: JSON.stringify(data) };
   }
 
