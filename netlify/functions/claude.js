@@ -41,12 +41,12 @@ export async function handler(event) {
           "Authorization": `Basic ${process.env.ONESIGNAL_API_KEY}`
         },
         body: JSON.stringify({
-          app_id: "48669045-803a-4541-b9b8-4fe516169dab",
-          included_segments: ["All"],
-          headings: { en: spremljena.zupanija },
-          contents: { en: spremljena.naslov },
-          url: "https://demoaplikacijanovosti.netlify.app"
-        })
+  app_id: "48669045-803a-4541-b9b8-4fe516169dab",
+  included_segments: ["All"],
+  headings: { en: spremljena.zupanija },
+  contents: { en: spremljena.naslov },
+  url: `https://demoaplikacijanovosti.netlify.app/?vijest=${spremljena.id}&zupanija=${encodeURIComponent(spremljena.zupanija)}`
+})
       });
     }
 
