@@ -222,12 +222,19 @@ function OdabirZupanije({ onOdabir }) {
   );
 }
 
-function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti, ucitavanje }) {
+function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti, ucitavanje, otvorenaVijest, onOcistiOtvorenuVijest }) {
   const [rubrika,        setRubrika]        = useState("komunalne");
   const [obavijesti, setObavijesti] = useState(() => {
   return localStorage.getItem(`obavijesti_${zupanija}`) === "true";
 });
-  const [odabranaVijest, setOdabranaVijest] = useState(null);
+  const [odabranaVijest, setOdabranaVijest] = useState(otvorenaVijest || null);
+
+useEffect(() => {
+  if (otvorenaVijest) {
+    setOdabranaVijest(otvorenaVijest);
+    onOcistiOtvorenuVijest();
+  }
+}, [otvorenaVijest]);
   const [toast,          setToast]          = useState(null);
 
   const showToast = useCallback(msg => { setToast(msg); setTimeout(() => setToast(null), 3500); }, []);
@@ -476,7 +483,8 @@ export default function App() {
   const [admin,      setAdmin]      = useState(false);
   const [lozinkaOk,  setLozinkaOk]  = useState(false);
   const [vijesti,    setVijesti]    = useState([]);
-  const [ucitavanje, setUcitavanje] = useState(true);
+const [ucitavanje, setUcitavanje] = useState(true);
+const [otvorenaVijest, setOtvorenaVijest] = useState(null);
 
   useEffect(() => {
   window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -490,10 +498,27 @@ export default function App() {
   });
 }, []);
   useEffect(() => {
-    dohvatiVijesti()
-      .then(data => { setVijesti(data); setUcitavanje(false); })
-      .catch(() => setUcitavanje(false));
-  }, []);
+  dohvatiVijesti()
+    .then(data => {
+      setVijesti(data);
+      setUcitavanje(false);
+
+      // Provjeri je li otvoren link s vijesti iz obavijesti
+      const params = new URLSearchParams(window.location.search);
+      const vijestId = params.get("vijest");
+      const zupanijaParam = params.get("zupanija");
+
+      if (vijestId && zupanijaParam) {
+        const nadena = data.find(v => String(v.id) === String(vijestId));
+        if (nadena) {
+          setZup(zupanijaParam);
+          setEkran("portal");
+          setOtvorenaVijest(nadena);
+        }
+      }
+    })
+    .catch(() => setUcitavanje(false));
+}, []);
 
   const handleNovaVijest = async (v) => {
     const spremljena = await spremiVijest(v);
@@ -517,11 +542,13 @@ export default function App() {
       {ekran==="portal" && (
         <>
           <VijestiPortal
-            zupanija={zup}
-            onPromijeniZupaniju={()=>setEkran("odabir")}
-            vijesti={vijesti}
-            ucitavanje={ucitavanje}
-          />
+  zupanija={zup}
+  onPromijeniZupaniju={()=>setEkran("odabir")}
+  vijesti={vijesti}
+  ucitavanje={ucitavanje}
+  otvorenaVijest={otvorenaVijest}
+  onOcistiOtvorenuVijest={()=>setOtvorenaVijest(null)}
+/>
           <button className="fab" onClick={()=>setAdmin(true)} title="Admin panel">✎</button>
         </>
       )}
