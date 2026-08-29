@@ -47,6 +47,14 @@ async function spremiVijest(vijest) {
   return data[0];
 }
 
+async function obrisiVijest(id) {
+  await fetch("/.netlify/functions/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "delete_vijest", id })
+  });
+}
+
 async function generirajVijestAI(natuknica, zupanija, rubrika) {
   const prompt = `Ti si novinar lokalnih vijesti za Hrvatsku. Na temelju sljedeće natuknice, napiši kratku vijest za web portal.
 
@@ -222,7 +230,7 @@ function OdabirZupanije({ onOdabir }) {
   );
 }
 
-function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti, ucitavanje, otvorenaVijest, onOcistiOtvorenuVijest }) {
+function VijestiPortal({ zupanija, onPromijeniZupaniju, vijesti, setVijesti, ucitavanje, otvorenaVijest, onOcistiOtvorenuVijest, jeAdmin }) {
   const [rubrika,        setRubrika]        = useState("komunalne");
   const [obavijesti, setObavijesti] = useState(() => {
   return localStorage.getItem(`obavijesti_${zupanija}`) === "true";
@@ -256,9 +264,24 @@ useEffect(() => {
             <div className="modal-body">
               <p className="modal-text">{odabranaVijest.kratki_tekst}</p>
               <div className="modal-foot">
-                <span className="modal-time">{odabranaVijest.vrijeme}</span>
-                <button className="btn-close" onClick={() => setOdabranaVijest(null)}>Zatvori</button>
-              </div>
+  <span className="modal-time">{odabranaVijest.vrijeme}</span>
+  <div style={{display:"flex", gap:10}}>
+    {jeAdmin && (
+      <button
+        onClick={async () => {
+          if (window.confirm("Sigurno želite obrisati ovu vijest?")) {
+            await obrisiVijest(odabranaVijest.id);
+            setVijesti(p => p.filter(v => v.id !== odabranaVijest.id));
+            setOdabranaVijest(null);
+          }
+        }}
+        style={{padding:"9px 24px", background:"var(--accent)", color:"#fff", border:"none", cursor:"pointer", fontFamily:"var(--sans)", fontSize:13, fontWeight:600}}>
+        Obriši
+      </button>
+    )}
+    <button className="btn-close" onClick={() => setOdabranaVijest(null)}>Zatvori</button>
+  </div>
+</div>
             </div>
           </div>
         </div>
@@ -545,9 +568,11 @@ const [otvorenaVijest, setOtvorenaVijest] = useState(null);
   zupanija={zup}
   onPromijeniZupaniju={()=>setEkran("odabir")}
   vijesti={vijesti}
+  setVijesti={setVijesti}
   ucitavanje={ucitavanje}
   otvorenaVijest={otvorenaVijest}
   onOcistiOtvorenuVijest={()=>setOtvorenaVijest(null)}
+  jeAdmin={lozinkaOk}
 />
           <button className="fab" onClick={()=>setAdmin(true)} title="Admin panel">✎</button>
         </>
