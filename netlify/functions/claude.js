@@ -17,6 +17,18 @@ export async function handler(event) {
     return { statusCode: 200, body: JSON.stringify(data) };
   }
 
+// Supabase — obriši vijest
+if (type === "delete_vijest") {
+  await fetch(`${process.env.SUPABASE_URL}/rest/v1/vijesti?id=eq.${body.id}`, {
+    method: "DELETE",
+    headers: {
+      "apikey": process.env.SUPABASE_KEY,
+      "Authorization": `Bearer ${process.env.SUPABASE_KEY}`
+    }
+  });
+  return { statusCode: 200, body: JSON.stringify({ ok: true }) };
+}
+  
   // Supabase — spremi vijest i pošalji obavijest
   if (type === "post_vijest") {
     const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/vijesti?columns=zupanija,rubrika,naslov,kratki_tekst,vazna`, {
