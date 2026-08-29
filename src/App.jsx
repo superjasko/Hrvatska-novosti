@@ -503,8 +503,9 @@ function LozinkaModal({ onUspjeh, onOdustani }) {
 export default function App() {
   const [ekran,      setEkran]      = useState("odabir");
   const [zup,        setZup]        = useState("");
-  const [admin,      setAdmin]      = useState(false);
-  const [lozinkaOk,  setLozinkaOk]  = useState(false);
+  const [admin, setAdmin]         = useState(false);
+  const [lozinkaOk, setLozinkaOk] = useState(false);
+  const [jeAdmin, setJeAdmin]     = useState(false);
   const [vijesti,    setVijesti]    = useState([]);
 const [ucitavanje, setUcitavanje] = useState(true);
 const [otvorenaVijest, setOtvorenaVijest] = useState(null);
@@ -572,16 +573,16 @@ const [otvorenaVijest, setOtvorenaVijest] = useState(null);
   ucitavanje={ucitavanje}
   otvorenaVijest={otvorenaVijest}
   onOcistiOtvorenuVijest={()=>setOtvorenaVijest(null)}
-  jeAdmin={lozinkaOk}
+  jeAdmin={jeAdmin}
 />
           <button className="fab" onClick={()=>setAdmin(true)} title="Admin panel">✎</button>
         </>
       )}
       {admin && !lozinkaOk && (
         <LozinkaModal
-          onUspjeh={()=>setLozinkaOk(true)}
-          onOdustani={()=>setAdmin(false)}
-        />
+  onUspjeh={()=>{ setLozinkaOk(true); setJeAdmin(true); }}
+  onOdustani={()=>setAdmin(false)}
+/>
       )}
       {admin && lozinkaOk && (
         <AdminPanel
